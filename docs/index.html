@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flight Delay Predictor</title>
+  <meta name="description" content="Predicts whether a New York departure will leave 15+ minutes late, using an XGBoost model that runs in your browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23172033'/%3E%3Cpath d='M6 21h20M9 17l7-7 2 2-4 5h8l2-2 2 1-3 5H9z' fill='%23F5A524'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="#overview">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 24h26" stroke="currentColor" stroke-width="2"/><path d="M8 19l8-9 2.5 2-4.5 6h9l2.5-2.5 2.5 1-3.5 5.5H8z" fill="currentColor"/></svg>
+        <span>Flight Delay Predictor</span>
+      </a>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" id="tab-overview" aria-controls="view-overview" data-view="overview">Overview</button>
+        <button role="tab" id="tab-predict" aria-controls="view-predict" data-view="predict">Predict a flight</button>
+        <button role="tab" id="tab-explore" aria-controls="view-explore" data-view="explore">Explore the data</button>
+        <button role="tab" id="tab-model" aria-controls="view-model" data-view="model">Model results</button>
+        <button role="tab" id="tab-replay" aria-controls="view-replay" data-view="replay">Replay test flights</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="load-status" class="status" role="status">Loading the model and data…</div>
+
+    <!-- OVERVIEW -->
+    <section class="view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" hidden>
+      <div class="hero">
+        <div class="hero__text">
+          <h1>Will this flight leave on time?</h1>
+          <p class="lede">A machine learning model that estimates, about an hour before departure, the chance a flight leaves New York 15 minutes or more late. It learned from <span data-fill="flights"></span> departures from JFK, LaGuardia and Newark in 2013, and it runs entirely in your browser.</p>
+          <p class="hero__actions">
+            <a class="btn btn--primary" href="#predict">Predict a flight</a>
+            <a class="btn" href="#replay">See it on real flights</a>
+          </p>
+        </div>
+        <div class="board" aria-label="Departures board: model risk compared with what happened">
+          <div class="board__head">
+            <span class="board__title">Departures</span>
+            <span class="board__meta"><span id="board-airport"></span> <span id="board-date"></span></span>
+          </div>
+          <table class="board__table">
+            <thead><tr><th>Time</th><th>Flight</th><th>To</th><th class="num">Risk</th><th>Model</th><th class="num">Actual</th></tr></thead>
+            <tbody id="board-rows"></tbody>
+          </table>
+          <div class="board__foot">
+            <span>Real 2013 test-set flights the model never saw. Risk is scored live.</span>
+            <button class="board__next" id="board-next" type="button">Next day</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="facts">
+        <div class="fact"><span class="fact__value" data-fill="auc"></span><span class="fact__label">ROC-AUC on unseen flights (0.5 = guessing)</span></div>
+        <div class="fact"><span class="fact__value" data-fill="recall"></span><span class="fact__label">of delayed flights flagged in advance</span></div>
+        <div class="fact"><span class="fact__value" data-fill="delayrate"></span><span class="fact__label">of all 2013 departures left 15+ min late</span></div>
+        <div class="fact"><span class="fact__value" data-fill="trees"></span><span class="fact__label">decision trees evaluated per prediction</span></div>
+      </div>
+
+      <div class="prose-grid">
+        <article>
+          <h2>The problem</h2>
+          <p>Flight delays cost the U.S. an estimated $32.9 billion a year, about half of it borne by passengers. If an airline knew an hour ahead which departures were likely to run late, it could re-plan crews and gates, and passengers could re-book early.</p>
+          <p>A flight counts as delayed when it leaves 15 minutes or more after schedule, the U.S. Department of Transportation's definition.</p>
+        </article>
+        <article>
+          <h2>How it works</h2>
+          <p>Every departure is described by 22 facts known before take-off: the schedule, the airline and route, the aircraft, the weather at the airport that hour, how busy the airport is, and how delayed flights were there two to three hours earlier.</p>
+          <p>An XGBoost model of 400 decision trees turns those facts into a probability. It was trained on days 1–17 of each month, tuned on days 18–21, and tested on days 22–31, so every score here comes from flights it never saw.</p>
+        </article>
+        <article>
+          <h2>What we found</h2>
+          <p>Delays build through the day: about 6% of 5 a.m. departures leave late, against 38% at 9 p.m. The strongest signals are the departure hour and recent delays at the airport, then the airline. Weather matters less once you know how the airport is running.</p>
+          <p>The model catches most delays but raises false alarms too, so it suits early warnings rather than automatic decisions.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- PREDICT -->
+    <section class="view" id="view-predict" role="tabpanel" aria-labelledby="tab-predict" hidden>
+      <div class="view__head">
+        <h1>Predict a flight</h1>
+        <p class="lede">Choose a flight and conditions. The model updates as you change anything. Values you don't set use what was typical for that airport, hour and month in 2013.</p>
+      </div>
+      <div class="predict">
+        <form class="predict__form" id="predict-form" novalidate>
+          <fieldset>
+            <legend>Flight</legend>
+            <div class="field-row">
+              <label class="field"><span>From</span><select id="f-origin"></select></label>
+              <label class="field"><span>To</span><select id="f-dest"></select></label>
+            </div>
+            <label class="field"><span>Airline</span><select id="f-carrier"></select></label>
+            <div class="field-row">
+              <label class="field"><span>Date</span><input type="date" id="f-date" value="2013-12-20" required></label>
+              <label class="field"><span>Departure time</span><select id="f-hour"></select></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Airport right now</legend>
+            <p class="hint">How delayed were flights here two to three hours earlier?</p>
+            <div class="segmented" role="radiogroup" aria-label="Recent delays at the airport" id="f-state">
+              <label><input type="radio" name="state" value="0"><span>Calm</span></label>
+              <label><input type="radio" name="state" value="1" checked><span>Typical</span></label>
+              <label><input type="radio" name="state" value="2"><span>Busy</span></label>
+              <label><input type="radio" name="state" value="3"><span>Severe</span></label>
+            </div>
+            <p class="hint" id="state-detail"></p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Weather at departure</legend>
+            <button type="button" class="link-btn" id="weather-reset">Use typical weather for this month</button>
+            <label class="slider"><span>Temperature <output id="o-temp"></output></span><input type="range" id="f-temp" min="0" max="100" step="1"></label>
+            <label class="slider"><span>Humidity <output id="o-humid"></output></span><input type="range" id="f-humid" min="10" max="100" step="1"></label>
+            <label class="slider"><span>Wind speed <output id="o-wind"></output></span><input type="range" id="f-wind" min="0" max="40" step="1"></label>
+            <label class="slider"><span>Precipitation <output id="o-precip"></output></span><input type="range" id="f-precip" min="0" max="0.5" step="0.01"></label>
+            <label class="slider"><span>Visibility <output id="o-visib"></output></span><input type="range" id="f-visib" min="0" max="10" step="0.25"></label>
+            <label class="slider"><span>Air pressure <output id="o-pressure"></output></span><input type="range" id="f-pressure" min="985" max="1040" step="1"></label>
+          </fieldset>
+        </form>
+
+        <div class="predict__result" aria-live="polite">
+          <div class="ticket" id="ticket">
+            <div class="ticket__flight" id="t-flight"></div>
+            <div class="ticket__route" id="t-route"></div>
+            <div class="ticket__when" id="t-when"></div>
+            <div class="ticket__prob"><span id="t-prob">–</span><span class="ticket__unit">chance of leaving 15+ min late</span></div>
+            <div class="meter" aria-hidden="true"><div class="meter__fill" id="t-meter"></div><div class="meter__mark" id="t-mark"></div></div>
+            <div class="ticket__verdict" id="t-verdict"></div>
+          </div>
+          <div class="panel">
+            <h2>Risk by departure time</h2>
+            <p class="hint">Same flight and weather, leaving at other hours, with the airport in its typical state for each hour.</p>
+            <div class="chart-box chart-box--md"><canvas id="c-hours" aria-label="Delay risk by departure hour"></canvas></div>
+          </div>
+          <div class="panel">
+            <h2>What would change the risk</h2>
+            <ul class="whatif" id="whatif"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPLORE -->
+    <section class="view" id="view-explore" role="tabpanel" aria-labelledby="tab-explore" hidden>
+      <div class="view__head">
+        <h1>Explore the data</h1>
+        <p class="lede">How often 2013 departures left 15+ minutes late. Filter by airport and airline; every chart updates.</p>
+      </div>
+      <div class="filters">
+        <label class="field field--inline"><span>Airport</span><select id="x-origin"></select></label>
+        <label class="field field--inline"><span>Airline</span><select id="x-carrier"></select></label>
+        <p class="filters__summary" id="x-summary"></p>
+      </div>
+      <div class="chart-grid">
+        <div class="panel panel--wide"><h2>By scheduled departure hour</h2><div class="chart-box"><canvas id="c-x-hour"></canvas></div></div>
+        <div class="panel"><h2>By month</h2><div class="chart-box"><canvas id="c-x-month"></canvas></div></div>
+        <div class="panel"><h2>By day of week</h2><div class="chart-box"><canvas id="c-x-dow"></canvas></div></div>
+        <div class="panel"><h2>By visibility</h2><div class="chart-box"><canvas id="c-x-vis"></canvas></div></div>
+        <div class="panel"><h2>Dry hours or precipitation</h2><div class="chart-box"><canvas id="c-x-precip"></canvas></div></div>
+        <div class="panel panel--wide"><h2>By airline</h2><p class="hint" id="x-airline-note"></p><div class="chart-box chart-box--tall"><canvas id="c-x-airline"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- MODEL -->
+    <section class="view" id="view-model" role="tabpanel" aria-labelledby="tab-model" hidden>
+      <div class="view__head">
+        <h1>Model results</h1>
+        <p class="lede">All scores are on <span data-fill="testn"></span> test flights (days 22–31 of every month) that no model saw during training or tuning.</p>
+      </div>
+      <div class="panel">
+        <h2>Three models against a baseline</h2>
+        <div class="table-wrap"><table class="data" id="m-table"></table></div>
+        <p class="hint">Always predicting "on time" scores <span data-fill="baseacc"></span> accuracy yet catches no delays, so F1 and ROC-AUC are the fairer measures. The last row removes the live airport-delay features to show how much they add.</p>
+      </div>
+      <div class="chart-grid">
+        <div class="panel"><h2>ROC curves</h2><p class="hint">Higher and further left is better. The dashed line is random guessing.</p><div class="chart-box chart-box--md"><canvas id="c-roc"></canvas></div></div>
+        <div class="panel">
+          <h2>XGBoost decisions on the test set</h2>
+          <p class="hint">At a decision threshold of <span data-fill="threshold"></span>.</p>
+          <div class="cm" id="cm"></div>
+        </div>
+        <div class="panel panel--wide"><h2>What the model relies on</h2><p class="hint">Drop in ROC-AUC when one input is shuffled. Bigger means the model leans on it more.</p><div class="chart-box chart-box--tall"><canvas id="c-imp"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- REPLAY -->
+    <section class="view" id="view-replay" role="tabpanel" aria-labelledby="tab-replay" hidden>
+      <div class="view__head">
+        <h1>Replay test flights</h1>
+        <p class="lede"><span data-fill="replayn"></span> randomly chosen flights from the test set, each scored live by the model and set against what actually happened.</p>
+      </div>
+      <div class="filters">
+        <label class="field field--inline"><span>Airport</span><select id="r-origin"></select></label>
+        <label class="field field--inline"><span>Airline</span><select id="r-carrier"></select></label>
+        <label class="field field--inline"><span>Result</span>
+          <select id="r-outcome">
+            <option value="">All results</option>
+            <option value="tp">Delay caught</option>
+            <option value="tn">Correctly on time</option>
+            <option value="fp">False alarm</option>
+            <option value="fn">Delay missed</option>
+          </select>
+        </label>
+        <label class="field field--inline"><span>Flight or destination</span><input type="search" id="r-search" placeholder="e.g. UA 436 or SFO"></label>
+      </div>
+      <p class="filters__summary" id="r-summary"></p>
+      <div class="table-wrap">
+        <table class="data data--replay">
+          <thead><tr><th>Date</th><th>Flight</th><th>Route</th><th>Departs</th><th class="num">Risk</th><th>Model says</th><th class="num">Actual</th><th>Result</th></tr></thead>
+          <tbody id="r-rows"></tbody>
+        </table>
+      </div>
+      <div class="pager"><button type="button" class="btn" id="r-prev">Previous</button><span id="r-page"></span><button type="button" class="btn" id="r-next">Next</button></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Built by Setornam Anyormi and Akwasi Nyarko for Intro. to A.I. Data: nycflights13 (U.S. Bureau of Transportation Statistics, NOAA, FAA). The model was trained on 2013 New York departures; predictions for other years assume similar patterns.</p>
+    <p><a href="https://github.com/AkwasiNyarko/Flight_Delay_Prediction">Source code and training pipeline on GitHub</a></p>
+  </footer>
+
+  <script src="vendor/chart-4.4.1.umd.min.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/views/overview.js"></script>
+  <script src="js/views/predict.js"></script>
+  <script src="js/views/explore.js"></script>
+  <script src="js/views/model.js"></script>
+  <script src="js/views/replay.js"></script>
+  <script>App.start();</script>
+</body>
+</html>
