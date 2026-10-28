@@ -104,7 +104,7 @@
     $("t-meter").classList.toggle("is-risk", risky);
     $("t-mark").style.left = (thr * 100) + "%";
     $("t-verdict").innerHTML = (risky ? "Delay likely" : "Likely on time") +
-      "<small>" + (risky ? "Above" : "Below") + " the model's " + App.pct(thr) + " decision threshold. In 2013, " +
+      "<small>" + (risky ? "Above" : "Below") + " the model's " + App.pct(thr) + " decision threshold. In " + App.year + ", " +
       (t ? App.pct(t.delay_rate) : "–") + " of all departures from " + S.origin + " at this hour left 15+ min late.</small>";
   }
 
@@ -179,6 +179,7 @@
       L = App.data.lookup;
       var origins = Object.keys(L.routes).sort();
       S = { origin: "JFK", dest: "MCO", carrier: "B6", hour: 19, state: 1 };
+      $("f-date").value = App.year + "-12-20";
       readDate();
       options($("f-origin"), origins.map(function (o) { return { value: o, label: o + " – " + App.airportName(o) }; }), S.origin);
       fillDest(); fillCarrier(); fillHours(); applyTypicalWeather();

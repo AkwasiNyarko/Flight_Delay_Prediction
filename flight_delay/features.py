@@ -2,13 +2,31 @@
 import numpy as np
 import pandas as pd
 
-from .config import (RECENT_LAGS, TEST_DAYS, TOP_N_DEST, TRAIN_DAYS,
-                     US_HOLIDAYS_2013, VAL_DAYS)
+from .config import RECENT_LAGS, TEST_DAYS, TOP_N_DEST, TRAIN_DAYS, VAL_DAYS, YEAR
 
 KEYS = ["origin", "year", "month", "day", "sched_dep_hour"]
 
 
-def days_to_nearest(dates: pd.Series, holidays=US_HOLIDAYS_2013) -> np.ndarray:
+def _nth_weekday(year, month, weekday, n):
+    """n-th given weekday (Mon=0) of a month; n = -1 for the last one."""
+    days = pd.date_range(f"{year}-{month:02d}-01", periods=pd.Timestamp(year, month, 1).days_in_month)
+    days = days[days.dayofweek == weekday]
+    return days[n - 1] if n > 0 else days[-1]
+
+
+def us_federal_holidays(year: int) -> pd.DatetimeIndex:
+    """U.S. federal holidays on their actual dates. Mirrors App.holidays in docs/js/app.js."""
+    dates = [pd.Timestamp(year, 1, 1), _nth_weekday(year, 1, 0, 3), _nth_weekday(year, 2, 0, 3),
+             _nth_weekday(year, 5, 0, -1), pd.Timestamp(year, 7, 4), _nth_weekday(year, 9, 0, 1),
+             _nth_weekday(year, 10, 0, 2), pd.Timestamp(year, 11, 11), _nth_weekday(year, 11, 3, 4),
+             pd.Timestamp(year, 12, 25)]
+    if year >= 2021:
+        dates.append(pd.Timestamp(year, 6, 19))          # Juneteenth
+    return pd.DatetimeIndex(sorted(dates))
+
+
+def days_to_nearest(dates: pd.Series, holidays=None) -> np.ndarray:
+    holidays = us_federal_holidays(YEAR) if holidays is None else holidays
     d = dates.values[:, None] - holidays.values[None, :]
     return np.abs(d.astype("timedelta64[D]").astype(int)).min(axis=1)
 
@@ -42,7 +60,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["sched_dep_hour"] = df["sched_dep_time"] // 100
     date = pd.to_datetime(df[["year", "month", "day"]])
     df["day_of_week"] = date.dt.dayofweek            # 0 = Monday
-    df["plane_age"] = 2013 - df["plane_year"]
+    df["plane_age"] = YEAR - df["plane_year"]
 
     # Congestion: scheduled departures in the same hour
     df["origin_hourly_volume"] = df.groupby(["origin", "time_hour"])["flight"].transform("count")

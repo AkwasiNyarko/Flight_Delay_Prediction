@@ -36,7 +36,7 @@
       <div class="hero">
         <div class="hero__text">
           <h1>Will this flight leave on time?</h1>
-          <p class="lede">A machine learning model that estimates, about an hour before departure, the chance a flight leaves New York 15 minutes or more late. It learned from <span data-fill="flights"></span> departures from JFK, LaGuardia and Newark in 2013, and it runs entirely in your browser.</p>
+          <p class="lede">A machine learning model that estimates, about an hour before departure, the chance a flight leaves New York 15 minutes or more late. It learned from <span data-fill="flights"></span> departures from JFK, LaGuardia and Newark in <span data-fill="year"></span>, and it runs entirely in your browser.</p>
           <p class="hero__actions">
             <a class="btn btn--primary" href="#predict">Predict a flight</a>
             <a class="btn" href="#replay">See it on real flights</a>
@@ -52,7 +52,7 @@
             <tbody id="board-rows"></tbody>
           </table>
           <div class="board__foot">
-            <span>Real 2013 test-set flights the model never saw. Risk is scored live.</span>
+            <span>Real <span data-fill="year"></span> test-set flights the model never saw. Risk is scored live.</span>
             <button class="board__next" id="board-next" type="button">Next day</button>
           </div>
         </div>
@@ -61,7 +61,7 @@
       <div class="facts">
         <div class="fact"><span class="fact__value" data-fill="auc"></span><span class="fact__label">ROC-AUC on unseen flights (0.5 = guessing)</span></div>
         <div class="fact"><span class="fact__value" data-fill="recall"></span><span class="fact__label">of delayed flights flagged in advance</span></div>
-        <div class="fact"><span class="fact__value" data-fill="delayrate"></span><span class="fact__label">of all 2013 departures left 15+ min late</span></div>
+        <div class="fact"><span class="fact__value" data-fill="delayrate"></span><span class="fact__label">of all <span data-fill="year"></span> departures left 15+ min late</span></div>
         <div class="fact"><span class="fact__value" data-fill="trees"></span><span class="fact__label">decision trees evaluated per prediction</span></div>
       </div>
 
@@ -88,7 +88,7 @@
     <section class="view" id="view-predict" role="tabpanel" aria-labelledby="tab-predict" hidden>
       <div class="view__head">
         <h1>Predict a flight</h1>
-        <p class="lede">Choose a flight and conditions. The model updates as you change anything. Values you don't set use what was typical for that airport, hour and month in 2013.</p>
+        <p class="lede">Choose a flight and conditions. The model updates as you change anything. Values you don't set use what was typical for that airport, hour and month in <span data-fill="year"></span>.</p>
       </div>
       <div class="predict">
         <form class="predict__form" id="predict-form" novalidate>
@@ -100,7 +100,7 @@
             </div>
             <label class="field"><span>Airline</span><select id="f-carrier"></select></label>
             <div class="field-row">
-              <label class="field"><span>Date</span><input type="date" id="f-date" value="2013-12-20" required></label>
+              <label class="field"><span>Date</span><input type="date" id="f-date" value="2023-12-20" required></label>
               <label class="field"><span>Departure time</span><select id="f-hour"></select></label>
             </div>
           </fieldset>
@@ -155,7 +155,7 @@
     <section class="view" id="view-explore" role="tabpanel" aria-labelledby="tab-explore" hidden>
       <div class="view__head">
         <h1>Explore the data</h1>
-        <p class="lede">How often 2013 departures left 15+ minutes late. Filter by airport and airline; every chart updates.</p>
+        <p class="lede">How often <span data-fill="year"></span> departures left 15+ minutes late. Filter by airport and airline; every chart updates.</p>
       </div>
       <div class="filters">
         <label class="field field--inline"><span>Airport</span><select id="x-origin"></select></label>
@@ -226,7 +226,7 @@
   </main>
 
   <footer class="footer">
-    <p>Built by Setornam Anyormi and Akwasi Nyarko for Intro. to A.I. Data: nycflights13 (U.S. Bureau of Transportation Statistics, NOAA, FAA). The model was trained on 2013 New York departures; predictions for other years assume similar patterns.</p>
+    <p>Built by Setornam Anyormi and Akwasi Nyarko for Intro. to A.I. Data: nycflights23 (U.S. Bureau of Transportation Statistics on-time data, NOAA hourly weather, FAA aircraft registry). The model was trained on 2023 New York departures; predictions for other years assume similar patterns.</p>
     <p><a href="https://github.com/AkwasiNyarko/Flight_Delay_Prediction">Source code and training pipeline on GitHub</a></p>
   </footer>
 

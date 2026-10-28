@@ -4,17 +4,20 @@ Opens every tab, makes a prediction, and fails on any console error or failed re
 Run after `python -m flight_delay.train`. Saves screenshots to reports/screenshots/.
 """
 import functools
+import json
 import http.server
 import os
 import threading
 
 import pytest
 
-from flight_delay.config import ROOT
+from flight_delay.config import ROOT, YEAR
+from flight_delay.features import us_federal_holidays
 
 playwright = pytest.importorskip("playwright.sync_api")
 DOCS = ROOT / "docs"
 SHOTS = ROOT / "reports" / "screenshots"
+SUMMARY = json.loads((DOCS / "data" / "summary.json").read_text())
 
 
 @pytest.fixture(scope="module")
@@ -62,11 +65,16 @@ def _clean(errors):
 
 def test_overview_board(page):
     assert page.locator("#board-rows tr").count() >= 7
-    assert page.locator('[data-fill="auc"]').inner_text() == "0.765"
+    assert page.locator('[data-fill="auc"]').inner_text() == f"{SUMMARY['headline']['auc']:.3f}"
     settle(page)
     page.screenshot(path=str(SHOTS / "1-overview.png"), full_page=True)
     page.click("#board-next")
     assert page.locator("#board-rows tr").count() >= 7
+
+
+def test_browser_holidays_match_python(page):
+    js = page.evaluate(f"App.holidays({YEAR}).map(d => new Date(d).toISOString().slice(0, 10))")
+    assert sorted(js) == [d.strftime("%Y-%m-%d") for d in us_federal_holidays(YEAR)]
 
 
 def test_predictor_matches_model(page):
@@ -103,7 +111,7 @@ def test_model_tab(page):
     page.click("#tab-model")
     page.wait_for_selector("#m-table tbody tr")
     assert page.locator("#m-table tbody tr").count() == 5
-    assert "14,585" in page.locator("#cm").inner_text()
+    assert f"{SUMMARY['confusion']['tp']:,}" in page.locator("#cm").inner_text()
     settle(page)
     page.screenshot(path=str(SHOTS / "4-model.png"), full_page=True)
 

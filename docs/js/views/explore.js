@@ -59,7 +59,7 @@
     var o = overall();
     var who = (F.carrier ? App.carrierName(F.carrier) : "All airlines") + " from " + (F.origin ? App.airportName(F.origin) : "all three New York airports");
     if (!o.n) {
-      $("x-summary").textContent = App.carrierName(F.carrier) + " didn't fly from " + F.origin + " in 2013. Choose another airport or airline.";
+      $("x-summary").textContent = App.carrierName(F.carrier) + " didn't fly from " + F.origin + " in " + App.year + ". Choose another airport or airline.";
       return;
     }
     $("x-summary").innerHTML = App.esc(who) + ": <strong>" + App.int(o.n) + "</strong> departures, <strong>" + App.pct(o.rate, 1) + "</strong> left 15+ min late.";

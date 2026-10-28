@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.metrics import roc_curve
 
 from .config import (CATEGORICAL, MODEL_FEATURES, MODEL_NUMERIC, RANDOM_STATE,
-                     SITE_DATA_DIR, TEST_DAYS, TRAIN_DAYS, VAL_DAYS)
+                     SITE_DATA_DIR, TEST_DAYS, TRAIN_DAYS, VAL_DAYS, YEAR)
 
 PRETTY = {
     "sched_dep_hour": "Departure hour", "day_of_week": "Day of week", "month": "Month",
@@ -118,7 +118,7 @@ def summary(df, test, results, test_probs, importance, cm, threshold) -> dict:
         "dataset": {
             "flights": int(len(df)), "delay_rate": round(float(df["delayed"].mean()), 4),
             "airlines": int(df["carrier"].nunique()), "destinations": int(df["dest"].nunique()),
-            "airports": sorted(df["origin"].unique().tolist()), "year": 2013,
+            "airports": sorted(df["origin"].unique().tolist()), "year": YEAR,
             "split": {"train_days": TRAIN_DAYS, "val_days": VAL_DAYS, "test_days": TEST_DAYS},
             "train": int((df["day"] <= TRAIN_DAYS[1]).sum()),
             "val": int(((df["day"] >= VAL_DAYS[0]) & (df["day"] <= VAL_DAYS[1])).sum()),
@@ -197,7 +197,7 @@ def lookup(tables, df, spec) -> dict:
 
 def replay(test, n=2000) -> dict:
     s = test.sample(n, random_state=RANDOM_STATE).sort_values(["month", "day", "sched_dep_time"])
-    meta = [[f"2013-{r.month:02d}-{r.day:02d}", r.carrier, int(r.flight), r.origin, r.dest,
+    meta = [[f"{YEAR}-{r.month:02d}-{r.day:02d}", r.carrier, int(r.flight), r.origin, r.dest,
              int(r.sched_dep_time), int(r.dep_delay)] for r in s.itertuples(index=False)]
     return {"features": MODEL_FEATURES,
             "meta_fields": ["date", "carrier", "flight", "origin", "dest", "sched", "dep_delay"],

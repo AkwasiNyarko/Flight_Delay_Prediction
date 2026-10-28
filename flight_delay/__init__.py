@@ -1,1 +1,1 @@
-"""Predicting flight departure delays (15+ minutes) for NYC airports, 2013."""
+"""Predicting flight departure delays (15+ minutes) for New York airports (2023 data)."""

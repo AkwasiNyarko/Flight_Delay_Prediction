@@ -14,7 +14,7 @@
       .filter(function (d) { return d.flights.length >= 7 && d.flights.some(function (f) { return f.delay >= 15; }); })
       .sort(function (a, b) { return a.key < b.key ? -1 : 1; });
     // start on the busiest pre-Christmas day if there is one
-    var start = days.findIndex(function (d) { return d.key.indexOf("2013-12-2") === 0; });
+    var start = days.findIndex(function (d) { return d.key.indexOf(App.year + "-12-2") === 0; });
     idx = start >= 0 ? start : 0;
   }
 

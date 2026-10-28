@@ -34,7 +34,7 @@
     return { key: "fn", label: "Delay missed", good: false };
   };
 
-  /* ---------- holidays (same rules as training: federal holidays of the same year) ---------- */
+  /* ---------- holidays (same rules as flight_delay/features.py: federal holidays of the same year) ---------- */
   function nthWeekday(year, month, weekday, n) {          // n = -1 for last
     if (n > 0) {
       var first = new Date(Date.UTC(year, month, 1));
@@ -47,7 +47,8 @@
   App.holidays = function (year) {
     return [Date.UTC(year, 0, 1), nthWeekday(year, 0, 1, 3), nthWeekday(year, 1, 1, 3),
       nthWeekday(year, 4, 1, -1), Date.UTC(year, 6, 4), nthWeekday(year, 8, 1, 1),
-      nthWeekday(year, 9, 1, 2), Date.UTC(year, 10, 11), nthWeekday(year, 10, 4, 4), Date.UTC(year, 11, 25)];
+      nthWeekday(year, 9, 1, 2), Date.UTC(year, 10, 11), nthWeekday(year, 10, 4, 4), Date.UTC(year, 11, 25)]
+      .concat(year >= 2021 ? [Date.UTC(year, 5, 19)] : []);          // Juneteenth, as in features.py
   };
   App.daysToHoliday = function (utcMs) {
     var y = new Date(utcMs).getUTCFullYear();
@@ -113,8 +114,9 @@
   /* ---------- shared fill-ins ---------- */
   function fillStats() {
     var s = App.data.summary, base = s.results[0];
+    App.year = s.dataset.year;
     var fills = {
-      flights: App.int(s.dataset.flights), auc: s.headline.auc.toFixed(3), recall: App.pct(s.headline.recall),
+      year: String(s.dataset.year), flights: App.int(s.dataset.flights), auc: s.headline.auc.toFixed(3), recall: App.pct(s.headline.recall),
       delayrate: App.pct(s.dataset.delay_rate), trees: String(App.model.trees.length),
       testn: App.int(s.dataset.test), baseacc: App.pct(base.accuracy), threshold: s.threshold.toFixed(2),
       replayn: App.int(App.data.replay.meta.length)

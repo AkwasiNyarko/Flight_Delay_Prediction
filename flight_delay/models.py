@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
 
-from .config import CATEGORICAL, RANDOM_STATE
+from .config import CATEGORICAL, RANDOM_STATE, XGB_PARAMS
 
 
 def build_preprocessor(scale: bool, numeric: list) -> ColumnTransformer:
@@ -36,9 +36,7 @@ def build_models(pos_weight: float, numeric: list) -> dict:
                                            random_state=RANDOM_STATE))]),
         "XGBoost": Pipeline([
             ("prep", build_preprocessor(False, numeric)),
-            ("clf", XGBClassifier(n_estimators=400, max_depth=7, learning_rate=0.05,
-                                  subsample=0.8, colsample_bytree=0.8,
-                                  scale_pos_weight=pos_weight, eval_metric="auc",
+            ("clf", XGBClassifier(**XGB_PARAMS, scale_pos_weight=pos_weight, eval_metric="auc",
                                   n_jobs=-1, random_state=RANDOM_STATE))]),
     }
 
