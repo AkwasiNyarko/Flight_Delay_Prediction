@@ -61,6 +61,9 @@ every month) that no model saw during training or tuning.
 
 ## Run it yourself
 
+**Quickest:** open `Flight_Delay_Prediction.ipynb`, which contains all of the project code (data, analysis, models,
+evaluation and the browser export) and runs end to end in about 4 minutes.
+
 ```bash
 pip install -r requirements.txt
 python -m flight_delay.train            # about 2 minutes: trains, evaluates, writes figures and dashboard data
